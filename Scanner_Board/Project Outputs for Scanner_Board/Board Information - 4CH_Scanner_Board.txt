@@ -1,0 +1,61 @@
+Board Information Report
+Filename     : C:\Users\logan\Documents\Mechanart\voltage_scanner\Scanner_Board\PCB\4CH_Scanner_Board.PcbDoc
+Date         : 10/22/2017
+Time         : 3:35:05 PM
+Time Elapsed : 00:00:00
+
+General
+    Board Size, 161.016mmx101.016mm
+    Components on board, 74
+count : 2
+
+Plated Hole Size, Pads, Vias
+    0mm, 152, 0
+    0.25mm, 0, 159
+    0.8331mm, 18, 0
+    0.8636mm, 32, 0
+    0.9mm, 28, 0
+    1.016mm, 128, 0
+count : 6
+
+Top Layer Annular Ring Size, Count
+    0.25mm, 159
+    0.4166mm, 18
+    0.4369mm, 32
+    0.635mm, 128
+    0.65mm, 28
+count : 5
+
+Mid Layer Annular Ring Size, Count
+    0.25mm, 159
+    0.4166mm, 18
+    0.4369mm, 32
+    0.635mm, 128
+    0.65mm, 28
+count : 5
+
+Bottom Layer Annular Ring Size, Count
+    0.25mm, 159
+    0.4166mm, 18
+    0.4369mm, 32
+    0.635mm, 128
+    0.65mm, 28
+count : 5
+
+Track Width, Count
+    0.025mm, 288
+    0.0254mm, 24
+    0.05mm, 284
+    0.0508mm, 68
+    0.1mm, 34
+    0.1194mm, 48
+    0.12mm, 234
+    0.15mm, 11
+    0.2mm, 4
+    0.254mm, 799
+    0.6mm, 4
+count : 11
+
+Net Track Width, Count
+    1857.6156mm, 88
+count : 1

@@ -1,0 +1,18 @@
+---------------------------------------------------------------------------
+NCDrill File Report For: 4CH_Scanner_Board.PcbDoc   10/22/2017  4:55:27 PM
+---------------------------------------------------------------------------
+
+Layer Pair : Top Layer to Bottom Layer
+ASCII RoundHoles File : 4CH_Scanner_Board.TXT
+
+Tool         Hole Size           Hole Type     Hole Count Plated       Tool Travel
+---------------------------------------------------------------------------
+T1        9.8mil (0.24892mm)       Round          1659             205.18 Inch (5211.68 mm)
+T2        32.8mil (0.83312mm)      Round          18               2.17 Inch (55.08 mm)
+T3        34mil (0.8636mm)         Round          32               4.92 Inch (124.98 mm)
+T4        35.4mil (0.89916mm)      Round          28               5.48 Inch (139.21 mm)
+T5        40mil (1.016mm)          Round          128              29.00 Inch (736.54 mm)
+---------------------------------------------------------------------------
+Totals                                            1865             246.75 Inch (6267.50 mm)
+
+Total Processing Time (hh:mm:ss) : 00:00:00
