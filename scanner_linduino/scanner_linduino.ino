@@ -30,6 +30,12 @@
 
 #include "scanner_board.h"
 
+/* STUFF TO CHANGE GOES HERE
+ *  
+ */
+#define num_brd 2
+
+
 byte rx = 0;
 
 // globals to store state of the relays
@@ -38,13 +44,7 @@ byte COM_A = 0;
 byte POS_B = 0;
 byte COM_B = 0;
 word switch_state = 0; // words are 16-bits in arduino land (hopefully)
-
-
-/* STUFF TO CHANGE GOES HERE
- *  
- */
-#define num_brd 1
-
+byte global_state[2*num_brd];
 
 void setup() {
   
@@ -65,57 +65,93 @@ void setup() {
   // start serial port at 115200
   Serial.begin(115200);
 
-  
-  
-  //print_welcome(); // print introduction
   Serial.println("Welcome to Voltage Scanner Firmware Debug!");
+  
+  initialize_relays(); // routine to ensure no relays are "on" 
+
+   /*
   //read_state();
-  //drive_relay(
-  //initialize_relays(); // routine to ensure no relays are "on" 
-  //all_off();
-  read_state();
   delay(100);
   //Serial.print("Driving "); Serial.println(i);
+
+  for(int i = 0; i < 4*num_brd; i ++){
+    Serial.print("Connecting Cell "); Serial.print(i + 1); Serial.println(" to A output.");
+    //drive_relay(i * 2);
+    byte offset = 16 * (i/4); // 0 for cells 1-4 (i = 0->3), 16 for cells 5-8, etc.
+    byte code = offset + (i%4)*2;
+   Serial.print("Sending code: "); Serial.print(code); Serial.println(" to drive_relay");
+    drive_relay(code);  // connect cell 1 to A we send 0, connect cell 6 to A we send 18
+    delay(100);
+    read_state(global_state);
+  }
+
+  for(int i = 0; i < 4*num_brd; i ++){
+    Serial.print("Connecting Cell "); Serial.print(i+1); Serial.println(" to B output.");
+    //drive_relay(8 + (i * 2));
+    byte offset = 8 * (2*(i/4) + 1); // 8 if on board 1, 24 if on board 2, etc.
+    byte code = offset + (i%4)*2;
+    Serial.print("Sending code: "); Serial.print(code); Serial.println(" to drive_relay");
+    drive_relay(code); // connect cell 1 to B we send 8, connect cell 6(i=5) to B we send 24 + 2 = 26 
+    delay(100);
+    read_state(global_state);
+  }
+
+  disconnect_A();
+  disconnect_B();
+
+  
 /*
-  for(int i = 0; i < 4; i ++){
-    Serial.print("Connecting Cell "); Serial.print(i + 1); Serial.println(" A output.");
-    drive_relay(i * 2);
+   for(int i = 0; i < 4*num_brd; i ++){
+    Serial.print("Disconnecting Cell "); Serial.print(i+1); Serial.println(" from A output.");
+    //drive_relay(i*2 + 1);
+    byte offset = 16 * (i/4); // 0 for cells 1-4 (i = 0->3), 16 for cells 5-8, etc.
+    drive_relay(offset + ((i%4)*2 + 1)); // disconnect cell 1 from A we send 1, disconnect cell 6 from A we send 19
     delay(100);
-    read_state();
-  }
-
-  for(int i = 0; i < 4; i ++){
-    Serial.print("Connecting Cell "); Serial.print(i+1); Serial.println(" B output.");
-    drive_relay(8 + (i * 2));
-    delay(100);
-    read_state();
-  }
-
-   for(int i = 0; i < 4; i ++){
-    Serial.print("Disconnecting Cell "); Serial.print(i+1); Serial.println(" A output.");
-    drive_relay(i*2 + 1);
-    delay(100);
-    read_state();
+    read_state(global_state);
   }
   
-  for(int i = 0; i < 4; i ++){
-    Serial.print("Disconnecting Cell "); Serial.print(i+1); Serial.println(" B output.");
-    drive_relay(8 + (i*2 + 1));
+  for(int i = 0; i < 4*num_brd; i ++){
+    Serial.print("Disconnecting Cell "); Serial.print(i+1); Serial.println(" from B output.");
+    byte offset = 8 * (2*(i/4) + 1); // 8 if on board 1, 24 if on board 2, etc.
+    drive_relay(offset + ((i%4)*2 + 1)); // disconnect cell 1 from B we send 9, disconnect cell 6(i=5) from B we send 24 + 2 + 1 = 27
     delay(100);
-    read_state();
+    read_state(global_state);
   }
+
 
 
   Serial.println("Attempting to connect cell 3 to A");
   connect_A(3);
-  read_state();
-  Serial.println("Attempting to connect cell 2 also to A");
-  connect_A(2);
-  read_state();
+  //read_state();
+  Serial.println("Attempting to connect cell 5 also to A");
+  connect_A(5);
+  //read_state();
   Serial.println("Disconnecting all from A");
   disconnect_A();
-  read_state();
-*/    
+  //read_state();
+*/
+}
+
+byte disconnect_A(){
+  for(int i = 0; i < 4 * num_brd; i ++){
+    Serial.print("Disconnecting Cell "); Serial.print(i+1); Serial.println(" A output.");
+    byte offset = 16 * (i/4); // 0 for cells 1-4 (i = 0->3), 16 for cells 5-8, etc.
+    drive_relay(offset + ((i%4)*2 + 1)); // disconnect cell 1 from A we send 1, disconnect cell 6 from A we send 19
+    
+    delay(100);
+    read_state(global_state);
+  }
+}
+
+byte disconnect_B(){
+  for(int i = 0; i < 4 * num_brd; i ++){
+    Serial.print("Disconnecting Cell "); Serial.print(i+1); Serial.println(" from B output.");
+    byte offset = 8 * (2*(i/4) + 1); // 8 if on board 1, 24 if on board 2, etc.
+    drive_relay(offset + ((i%4)*2 + 1)); // disconnect cell 1 from B we send 9, disconnect cell 6(i=5) from B we send 24 + 2 + 1 = 27
+    
+    delay(100);
+    read_state(global_state);
+  }
 }
 
 void printByte(byte myByte){
@@ -142,34 +178,15 @@ void printWord(word myByte){
 
 
 byte initialize_relays() {
-  word  curr_state = read_state();
-  
-  // disconnect any connected cells
-	if(curr_state != 0){
-		int i = 0;
-		int relay_code = 0;
-		for (word mask = 0x8000; mask; mask >>= 1) {
-			if(mask & curr_state) {
-				//Serial.print("Switch "); Serial.print(switch_name[i]); Serial.print(" was closed. Opening/resetting...\n");
-				// since both POS and COM for a given cell/output combo are on a single relay, let's drive reset for that  one
-				// example: COM_B_C3 is set (11th bit in switch_state - U4 "F" , i == 10 in this loop) 
-				// so we need to drive the RESET coil on the B_CELL3 = OUT6 of U2, first byte of drive word bit  clocked to MICREL
-				relay_code = (i >> 1) << 1;
-				Serial.print("Sending request to fire relay coil on effective OUT"); Serial.println(relay_code); 
-				//drive_relay(relay_code);
-			}
-			i++;
-		}
-	}
-  // read state again to verify nothing is "on"
-//TODO
-  // return 0 if successfully initialized, anything else if not (perhaps cell stuck on?)
-  //TODO
+ disconnect_A();
+ disconnect_B();
 }
 
-word read_state(){
+byte read_state(byte *curr_state){
 	// read state of relays via 74HC165D
-  word switch_state = 0;
+  //word switch_state = 0;
+  //byte rdbk_byte[2*num_brd];
+  
   mux_165();
   digitalWrite(AUX, HIGH);
   delay(10);
@@ -179,82 +196,135 @@ word read_state(){
   
   // parallel data is latched - let's shift it out 
   // first byte is from U4 - MSB is input H 
-  byte rdbk_byte_1 = SPI.transfer(0x00);
-  byte rdbk_byte_0 = SPI.transfer(0x00);
-  switch_state = (rdbk_byte_1 << 8) ^ rdbk_byte_0;
-  Serial.print("Readback of U4 (B): "); printByte(rdbk_byte_1); Serial.println();
-  
-  Serial.print("Readback of U3 (A): "); printByte(rdbk_byte_0); Serial.println();
-  
-  Serial.print("Concatenated switch state B_A: "); printWord(switch_state); Serial.println();
-  
-  return(switch_state);
+  //byte rdbk_byte_1 = SPI.transfer(0x00);
+  //byte rdbk_byte_0 = SPI.transfer(0x00);
+  for(int i = 0; i < 2*num_brd; i++){
+    //rdbk_byte[i] = SPI.transfer(0x00);
+    curr_state[i] = SPI.transfer(0x00);
+    if(i%2 == 0){ // even meaning B state since U4 is tied to MISO
+      Serial.print("Readback of B state from board "); Serial.print(i/2 + 1); Serial.print(": "); printByte(curr_state[i]); Serial.println();  
+    }
+    else{
+      Serial.print("Readback of A state from board "); Serial.print(i/2 + 1); Serial.print(": "); printByte(curr_state[i]); Serial.println();
+    }
+  }
+ 
+  return(0);
 }
+
 
 void drive_relay(byte code){
 	// send the appropriate bytes to tell MICREL driver to turn ON output at #output 
 	// likewise, OUT2 of U1 is in the high byte, 
 	// uses the concatenated 0-indexed bit field value for OUT, i.e. OUT6 of U2 is in the low byte, at 1 << 2
+  Serial.print("Received instruction to drive relay #"); Serial.println(code); 
   mux_MIC();
   digitalWrite(AUX, LOW); // strobe
   digitalWrite(OEn, HIGH); // hopefully output are already off/disabled
-  if (code > 7){
-    SPI.transfer(1 << (code - 8));
-    SPI.transfer(0x00);
+
+  // create the output code array - 2 bytes per board
+  byte output_code[2*num_brd];
+  memset(output_code, 0x0, sizeof(output_code)); // all zeroes
+  output_code[code/8] ^= 1 << code%8; 
+  for(int i = sizeof(output_code); i > 0; i--){
+    Serial.print(output_code[i-1], BIN);
+    SPI.transfer(output_code[i-1]);
   }
-  else {
-    SPI.transfer(0x00);
-    SPI.transfer(1 << code);
-  }
+  Serial.println();
   
   digitalWrite(AUX, HIGH);
-  delay(2);
+  delay(5);
   digitalWrite(AUX, LOW); // serial to parallel latch to output buffers
-  delay(2);
+  delay(5);
   
   digitalWrite(OEn, LOW);  // enable the output buffers - let's kick it off!
-  delay(15);
+  delay(30);
   digitalWrite(OEn, HIGH); // disable output buffers. Relay should have switched by now... 
 }
 
-void all_off(){
-  mux_MIC();
-  digitalWrite(AUX, LOW);
-  SPI.transfer(0x00);
-  SPI.transfer(0x00);
-  digitalWrite(AUX, HIGH); // pulse strobe to latch data
-  delay(2);
-  digitalWrite(AUX, LOW);
-  digitalWrite(OEn, HIGH); // disable output drivers anyway
-}
-
-byte connect_A(byte cell_num) {
-  word curr_state = 0x0000;
-  byte A_state = 0xFF;
-  word expected_state = 0x00;
+bool already_connected(char output){
+  bool already_connected = false;
+  byte curr_state[2*num_brd];
+  byte expected_state[2*num_brd];
+  memset(curr_state, 0x00, sizeof(curr_state)); 
+  memset(expected_state, 0x00, sizeof(expected_state));
+  byte output_state[num_brd];
+  memset(output_state, 0xFF, sizeof(output_state));
+  
   // will attempt to connect the argument cell to output A
   // first checks and disconnects any previously connected cell from output A and COM A
-  curr_state = read_state();
-  A_state = curr_state & 0xFF;
-  Serial.print("A_state: ");printByte(A_state);Serial.println();
-  Serial.print("~A_state: "); printByte(~A_state);Serial.println();
-  if((~A_state & 0xFF) != 0x00){
+  read_state(curr_state); // read_state now takes a pointer to an array
+
+  if(output == 'A'){
+    Serial.print("Output A ");
+    for(int i = 0; i < sizeof(curr_state); i++){
+      if(i%2 != 0){
+        output_state[i/2] = curr_state[i];
+      }
+    }
+  }
+  else{
+    Serial.print("Output B");
+    for(int i = 0; i < sizeof(curr_state); i++){
+      if(i%2 == 0){
+        output_state[i/2] = curr_state[i];
+      }
+    }
+  }
+  
+  Serial.print("output_state: ");
+  for(int i = 0; i < sizeof(output_state); i++){
+    printByte(output_state[i]);
+  }
+  Serial.print("    ");
+
+  Serial.print("~output_state: ");
+  for(int i = 0; i < sizeof(output_state); i++){
+    printByte(~output_state[i]);
+    if((~output_state[i] & 0xFF) != 0x00){
+      already_connected = true;
+    }
+  }
+  Serial.println();
+
+  return(already_connected);
+}
+
+
+byte connect_A(byte cell_num) {
+  
+  if(already_connected('A')){
     Serial.println("Uh-oh, a cell is already connected to output A");
     disconnect_A();
-    curr_state = read_state();
-    A_state = curr_state & 0xFF;
-    if((~A_state & 0xFF) != 0){
+    
+    if(already_connected('A')){
       Serial.println("Failed to clear A - exiting.");
       return -1;
     }
     else {
       //clearing the state worked, let's go ahead and connect the cell
-      drive_relay((cell_num - 1)*2);
+      //drive_relay((cell_num - 1)*2);
+      byte i = cell_num -1;
+      Serial.print("Connecting Cell "); Serial.print(i + 1); Serial.println(" to A output.");
+      //drive_relay(i * 2);
+      byte offset = 16 * (i/4); // 0 for cells 1-4 (i = 0->3), 16 for cells 5-8, etc.
+      byte code = offset + (i%4)*2;
+      Serial.print("Sending code: "); Serial.print(code); Serial.println(" to drive_relay");
+      drive_relay(code);  // connect cell 1 to A we send 0, connect cell 6 to A we send 18
     }
   }
   else {
-    drive_relay((cell_num - 1) * 2);
+    //drive_relay((cell_num - 1) * 2);
+      byte i = cell_num -1;
+      Serial.print("Connecting Cell "); Serial.print(i + 1); Serial.println(" to A output.");
+      //drive_relay(i * 2);
+      byte offset = 16 * (i/4); // 0 for cells 1-4 (i = 0->3), 16 for cells 5-8, etc.
+      byte code = offset + (i%4)*2;
+      Serial.print("Sending code: "); Serial.print(code); Serial.println(" to drive_relay");
+      drive_relay(code);  // connect cell 1 to A we send 0, connect cell 6 to A we send 18
   }
+
+  /*
   curr_state = read_state();
   // return 0 if successful, anything else is a fail (perhaps we return the cell stuck connected?)
   A_state = curr_state & 0xFF;
@@ -268,44 +338,41 @@ byte connect_A(byte cell_num) {
     Serial.println("Success!");
     return 0;
   }
-}
-
-byte disconnect_A(){
-  for(int i = 0; i < 4; i ++){
-    Serial.print("Disconnecting Cell "); Serial.print(i+1); Serial.println(" A output.");
-    drive_relay(i*2 + 1);
-    delay(100);
-    read_state();
-  }
+  */
+  return 0; // remove and clean up commented check above
 }
 
 byte connect_B(byte cell_num) {
-  word curr_state = 0x0000;
-  byte B_state = 0xFF;
-  word expected_state = 0x00;
-  // will attempt to connect the argument cell to output B
-  // first checks and disconnects any previously connected cell from output B and COM B
-  curr_state = read_state();
-  B_state = (curr_state >> 8) & 0xFF;
-  Serial.print("B_state: ");printByte(B_state);Serial.println();
-  Serial.print("~B_state: "); printByte(~B_state);Serial.println();
-  if((~B_state & 0xFF) != 0x00){
+  if(already_connected('B')){
     Serial.println("Uh-oh, a cell is already connected to output B");
     disconnect_B();
-    curr_state = read_state();
-    B_state = (curr_state >> 8) & 0xFF;
-    if((~B_state & 0xFF) != 0){
+    if(already_connected('B')){
       Serial.println("Failed to clear B - exiting.");
       return -1;
     }
     else {
       //clearing the state worked, let's go ahead and connect the cell
-      drive_relay(8 + (cell_num - 1)*2);
+      //drive_relay(8 + (cell_num - 1)*2);
+      byte i = cell_num - 1;
+      Serial.print("Connecting Cell "); Serial.print(i+1); Serial.println(" to B output.");
+      //drive_relay(8 + (i * 2));
+      byte offset = 8 * (2*(i/4) + 1); // 8 if on board 1, 24 if on board 2, etc.
+      byte code = offset + (i%4)*2;
+      Serial.print("Sending code: "); Serial.print(code); Serial.println(" to drive_relay");
+      drive_relay(code); // connect cell 1 to B we send 8, connect cell 6(i=5) to B we send 24 + 2 = 26 
     }
   }
   else {
-    drive_relay(8 + (cell_num - 1) * 2);
+    //drive_relay(8 + (cell_num - 1) * 2);
+      byte i = cell_num - 1;
+      Serial.print("Connecting Cell "); Serial.print(i+1); Serial.println(" to B output.");
+      //drive_relay(8 + (i * 2));
+      byte offset = 8 * (2*(i/4) + 1); // 8 if on board 1, 24 if on board 2, etc.
+      byte code = offset + (i%4)*2;
+      Serial.print("Sending code: "); Serial.print(code); Serial.println(" to drive_relay");
+      drive_relay(code); // connect cell 1 to B we send 8, connect cell 6(i=5) to B we send 24 + 2 = 26 
   }
+  /*
   curr_state = read_state();
   // return 0 if successful, anything else is a fail (perhaps we return the cell stuck connected?)
   B_state = (curr_state >> 8) & 0xFF;
@@ -319,18 +386,12 @@ byte connect_B(byte cell_num) {
     Serial.println("Success!");
     return 0;
   }
-}
-
-byte disconnect_B(){
-  for(int i = 0; i < 4; i ++){
-    Serial.print("Disconnecting Cell "); Serial.print(i+1); Serial.println(" B output.");
-    drive_relay(i*2 + 9);
-    delay(100);
-    read_state();
-  }
+  */
+  return 0;
 }
 
 void loop() {
+  
   char rx_buf[5];
   memset(rx_buf, '\0', sizeof(rx_buf));
   byte index = 0;
@@ -408,5 +469,5 @@ void loop() {
     }
   }  
   // clear rx_buf
-  memset(rx_buf, '\0', sizeof(rx_buf));
+
 }
