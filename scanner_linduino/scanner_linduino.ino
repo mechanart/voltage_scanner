@@ -45,6 +45,8 @@ byte POS_B = 0;
 byte COM_B = 0;
 word switch_state = 0; // words are 16-bits in arduino land (hopefully)
 byte global_state[2*num_brd];
+byte A_state[num_brd];
+byte B_state[num_brd];
 
 void setup() {
   
@@ -143,6 +145,16 @@ byte disconnect_A(){
   }
 }
 
+byte disconnect_A(byte cell_num){
+    byte i = cell_num - 1;
+    Serial.print("Disconnecting Cell "); Serial.print(i+1); Serial.println(" A output.");
+    byte offset = 16 * (i/4); // 0 for cells 1-4 (i = 0->3), 16 for cells 5-8, etc.
+    drive_relay(offset + ((i%4)*2 + 1)); // disconnect cell 1 from A we send 1, disconnect cell 6 from A we send 19
+    
+    delay(100);
+    read_state(global_state);
+}
+
 byte disconnect_B(){
   for(int i = 0; i < 4 * num_brd; i ++){
     Serial.print("Disconnecting Cell "); Serial.print(i+1); Serial.println(" from B output.");
@@ -152,6 +164,16 @@ byte disconnect_B(){
     delay(100);
     read_state(global_state);
   }
+}
+
+byte disconnect_B(byte cell_num){
+  byte i = cell_num - 1;
+  Serial.print("Disconnecting Cell "); Serial.print(i+1); Serial.println(" from B output.");
+  byte offset = 8 * (2*(i/4) + 1); // 8 if on board 1, 24 if on board 2, etc.
+  drive_relay(offset + ((i%4)*2 + 1)); // disconnect cell 1 from B we send 9, disconnect cell 6(i=5) from B we send 24 + 2 + 1 = 27
+  
+  delay(100);
+  read_state(global_state);
 }
 
 void printByte(byte myByte){
@@ -212,6 +234,32 @@ byte read_state(byte *curr_state){
   return(0);
 }
 
+byte read_state(byte *curr_state, byte * A_state, byte * B_state){
+  // read state of relays via 74HC165D  
+  mux_165();
+  digitalWrite(AUX, HIGH);
+  delay(10);
+  digitalWrite(AUX, LOW);
+  delay(10); // delay to allow propogation of parallel load pulse to 165
+  digitalWrite(AUX, HIGH);
+  
+  // parallel data is latched - let's shift it out 
+  // first byte is from U4 aka Board 1 Output B - MSB is input H 
+  for(int i = 0; i < 2*num_brd; i++){
+    //rdbk_byte[i] = SPI.transfer(0x00);
+    curr_state[i] = SPI.transfer(0x00);
+    if(i%2 == 0){ // even meaning B state since U4 is tied to MISO
+      Serial.print("Readback of B state from board "); Serial.print(i/2 + 1); Serial.print(": "); printByte(curr_state[i]); Serial.println();  
+      // set B state appropriately given first byte is from 
+      B_state[num_brd - i] = curr_state[i]; // 
+    }
+    else{
+      Serial.print("Readback of A state from board "); Serial.print(i/2 + 1); Serial.print(": "); printByte(curr_state[i]); Serial.println();
+    }
+  }
+ 
+  return(0);
+}
 
 void drive_relay(byte code){
 	// send the appropriate bytes to tell MICREL driver to turn ON output at #output 
@@ -264,7 +312,7 @@ bool already_connected(char output){
     }
   }
   else{
-    Serial.print("Output B");
+    Serial.print("Output B ");
     for(int i = 0; i < sizeof(curr_state); i++){
       if(i%2 == 0){
         output_state[i/2] = curr_state[i];
@@ -277,20 +325,44 @@ bool already_connected(char output){
     printByte(output_state[i]);
   }
   Serial.print("    ");
+  byte connected_cell;
 
   Serial.print("~output_state: ");
   for(int i = 0; i < sizeof(output_state); i++){
     printByte(~output_state[i]);
-    if((~output_state[i] & 0xFF) != 0x00){
+    //Serial.println();
+    if(((~output_state[i]) & 0xFF) != 0x00){
       already_connected = true;
+      //Serial.println(i);
     }
-  }
+    if(already_connected){
+      for(int j = 0; j < 4; j++){
+        if(~output_state[i] & (0x03 << (j * 2))){
+          Serial.print(i); Serial.print(" ");
+          Serial.println(j);
+          connected_cell = j + 1 + i * 4; // 4 cells per board
+        } 
+      }
+      if(connected_cell <= num_brd * 4){
+        Serial.println(); Serial.print("Cell "); Serial.print(connected_cell); Serial.print(" connected to output "); Serial.println(output);
+      }
+    }
+   }
+
   Serial.println();
 
   return(already_connected);
 }
+/*
+byte get_A_state(byte * A_state){
+  byte curr_state[2*num_brd];
+  memset(curr_state, 0x00, sizeof(curr_state));
 
-
+  read_state(curr_state);
+  
+  for(int i = 0; i < sizeof(curr_state
+}
+*/
 byte connect_A(byte cell_num) {
   
   if(already_connected('A')){
@@ -446,7 +518,7 @@ void loop() {
       memset(cell_num_str, '\0', sizeof(cell_num_str));
       strncpy(cell_num_str, rx_buf+1, 2);
       byte cell_num = atoi(cell_num_str);
-      if((cell_num < 1) || (cell_num > (8 * num_brd))){
+      if((cell_num < 1) || (cell_num > (4 * num_brd))){
         Serial.println("Error bad cell number in connect request.");
       }
       else{
@@ -468,6 +540,12 @@ void loop() {
       disconnect_B();
     }
   }  
+
+  if (rx_buf[0] == 'R'){
+    Serial.println("Got a readback command"); // "R" for readback - get it? Right now just runs already_connected()
+    Serial.println(rx_buf);
+    already_connected(rx_buf[1]);
+  }
   // clear rx_buf
 
 }
