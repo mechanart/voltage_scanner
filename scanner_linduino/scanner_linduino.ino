@@ -155,6 +155,22 @@ byte disconnect_A(byte cell_num){
     read_state(global_state);
 }
 
+byte disconnect_cell(byte cell_num, char output){
+    byte i = cell_num - 1;
+    Serial.print("Disconnecting Cell "); Serial.print(i+1); Serial.print(" from output "); Serial.println(output);
+    if(output == 'A'){
+      byte offset = 16 * (i/4); // 0 for cells 1-4 (i = 0->3), 16 for cells 5-8, etc.
+      drive_relay(offset + ((i%4)*2 + 1)); // disconnect cell 1 from A we send 1, disconnect cell 6 from A we send 19
+    }
+    if(output == 'B'){
+       byte offset = 8 * (2*(i/4) + 1); // 8 if on board 1, 24 if on board 2, etc.
+      drive_relay(offset + ((i%4)*2 + 1)); // disconnect cell 1 from B we send 9, disconnect cell 6(i=5) from B we send 24 + 2 + 1 = 27
+    }
+    
+    delay(100);
+    read_state(global_state);
+}
+
 byte disconnect_B(){
   for(int i = 0; i < 4 * num_brd; i ++){
     Serial.print("Disconnecting Cell "); Serial.print(i+1); Serial.println(" from B output.");
@@ -464,6 +480,48 @@ byte connect_B(byte cell_num) {
   return 0;
 }
 
+byte connect_cell(byte cell_num, char output){
+  if(already_connected(output)){
+    Serial.print("Uh-oh, a cell is already connected to output "); Serial.println(output);
+    disconnect_cell(check_connected(output), output);
+    
+    if(already_connected(output)){
+      Serial.print("Exiting - failed to clear output "); Serial.println(output);
+      return -1;
+    }
+  }
+  // either nothing was connected or clearing worked so let's go ahead and connect the new cell
+  byte i = cell_num - 1;
+  byte offset = 0;
+  byte code = 0;
+  Serial.print("Connecting Cell "); Serial.print(i+1); Serial.print(" to output "); Serial.println(output);
+  // only this section is different for A/B output
+
+  if(output == 'A'){
+    offset = 16 * (i/4); // 0 for cells 1-4 (i = 0->3), 16 for cells 5-8, etc.
+    code = offset + (i%4)*2;
+  }
+  if(output == 'B'){
+    offset = 8 * (2*(i/4) + 1); // 8 if on board 1, 24 if on board 2, etc.
+    code = offset + (i%4)*2;
+  }
+
+  // common code
+  Serial.print("Sending code: "); Serial.print(code); Serial.println(" to drive_relay");
+  drive_relay(code); // connect cell 1 to B we send 8, connect cell 6(i=5) to B we send 24 + 2 = 26 
+  
+  if(check_connected(output) == cell_num){
+    Serial.println("Success!");
+    return 0;
+  }
+  else {
+    Serial.println("Failed to connect cell...");
+    return -1;
+  }
+  //should never get here
+  return -1;
+}
+
 void loop() {
   
   char rx_buf[5];
@@ -510,7 +568,7 @@ void loop() {
       }
       else{
         Serial.print("Attempting to connect cell "); Serial.print(cell_num); Serial.println(" to output A.");
-        connect_A(cell_num);
+        connect_cell(cell_num, rx_buf[3]);
       }
     }
     if (rx_buf[3] == 'B'){
@@ -525,7 +583,7 @@ void loop() {
       }
       else{
         Serial.print("Attempting to connect cell "); Serial.print(cell_num); Serial.println(" to output B.");
-        connect_B(cell_num);
+        connect_cell(cell_num, rx_buf[3]);
       }
     }
   }  
