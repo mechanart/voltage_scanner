@@ -70,68 +70,6 @@ void setup() {
   Serial.println("Welcome to Voltage Scanner Firmware Debug!");
   
   initialize_relays(); // routine to ensure no relays are "on" 
-
-   /*
-  //read_state();
-  delay(100);
-  //Serial.print("Driving "); Serial.println(i);
-
-  for(int i = 0; i < 4*num_brd; i ++){
-    Serial.print("Connecting Cell "); Serial.print(i + 1); Serial.println(" to A output.");
-    //drive_relay(i * 2);
-    byte offset = 16 * (i/4); // 0 for cells 1-4 (i = 0->3), 16 for cells 5-8, etc.
-    byte code = offset + (i%4)*2;
-   Serial.print("Sending code: "); Serial.print(code); Serial.println(" to drive_relay");
-    drive_relay(code);  // connect cell 1 to A we send 0, connect cell 6 to A we send 18
-    delay(100);
-    read_state(global_state);
-  }
-
-  for(int i = 0; i < 4*num_brd; i ++){
-    Serial.print("Connecting Cell "); Serial.print(i+1); Serial.println(" to B output.");
-    //drive_relay(8 + (i * 2));
-    byte offset = 8 * (2*(i/4) + 1); // 8 if on board 1, 24 if on board 2, etc.
-    byte code = offset + (i%4)*2;
-    Serial.print("Sending code: "); Serial.print(code); Serial.println(" to drive_relay");
-    drive_relay(code); // connect cell 1 to B we send 8, connect cell 6(i=5) to B we send 24 + 2 = 26 
-    delay(100);
-    read_state(global_state);
-  }
-
-  disconnect_A();
-  disconnect_B();
-
-  
-/*
-   for(int i = 0; i < 4*num_brd; i ++){
-    Serial.print("Disconnecting Cell "); Serial.print(i+1); Serial.println(" from A output.");
-    //drive_relay(i*2 + 1);
-    byte offset = 16 * (i/4); // 0 for cells 1-4 (i = 0->3), 16 for cells 5-8, etc.
-    drive_relay(offset + ((i%4)*2 + 1)); // disconnect cell 1 from A we send 1, disconnect cell 6 from A we send 19
-    delay(100);
-    read_state(global_state);
-  }
-  
-  for(int i = 0; i < 4*num_brd; i ++){
-    Serial.print("Disconnecting Cell "); Serial.print(i+1); Serial.println(" from B output.");
-    byte offset = 8 * (2*(i/4) + 1); // 8 if on board 1, 24 if on board 2, etc.
-    drive_relay(offset + ((i%4)*2 + 1)); // disconnect cell 1 from B we send 9, disconnect cell 6(i=5) from B we send 24 + 2 + 1 = 27
-    delay(100);
-    read_state(global_state);
-  }
-
-
-
-  Serial.println("Attempting to connect cell 3 to A");
-  connect_A(3);
-  //read_state();
-  Serial.println("Attempting to connect cell 5 also to A");
-  connect_A(5);
-  //read_state();
-  Serial.println("Disconnecting all from A");
-  disconnect_A();
-  //read_state();
-*/
 }
 
 byte disconnect_A(){
@@ -145,15 +83,6 @@ byte disconnect_A(){
   }
 }
 
-byte disconnect_A(byte cell_num){
-    byte i = cell_num - 1;
-    Serial.print("Disconnecting Cell "); Serial.print(i+1); Serial.println(" A output.");
-    byte offset = 16 * (i/4); // 0 for cells 1-4 (i = 0->3), 16 for cells 5-8, etc.
-    drive_relay(offset + ((i%4)*2 + 1)); // disconnect cell 1 from A we send 1, disconnect cell 6 from A we send 19
-    
-    delay(100);
-    read_state(global_state);
-}
 
 byte disconnect_cell(byte cell_num, char output){
     byte i = cell_num - 1;
@@ -180,16 +109,6 @@ byte disconnect_B(){
     delay(100);
     read_state(global_state);
   }
-}
-
-byte disconnect_B(byte cell_num){
-  byte i = cell_num - 1;
-  Serial.print("Disconnecting Cell "); Serial.print(i+1); Serial.println(" from B output.");
-  byte offset = 8 * (2*(i/4) + 1); // 8 if on board 1, 24 if on board 2, etc.
-  drive_relay(offset + ((i%4)*2 + 1)); // disconnect cell 1 from B we send 9, disconnect cell 6(i=5) from B we send 24 + 2 + 1 = 27
-  
-  delay(100);
-  read_state(global_state);
 }
 
 void printByte(byte myByte){
@@ -383,102 +302,6 @@ byte check_connected(char output){
 
   return(connected_cell);
 }
-/*
-byte get_A_state(byte * A_state){
-  byte curr_state[2*num_brd];
-  memset(curr_state, 0x00, sizeof(curr_state));
-
-  read_state(curr_state);
-  
-  for(int i = 0; i < sizeof(curr_state
-}
-*/
-byte connect_A(byte cell_num) {
-  
-  if(already_connected('A')){
-    Serial.println("Uh-oh, a cell is already connected to output A");
-    disconnect_A(check_connected('A'));
-    
-    if(already_connected('A')){
-      Serial.println("Failed to clear A - exiting.");
-      return -1;
-    }
-    else {
-      //clearing the state worked, let's go ahead and connect the cell
-      //drive_relay((cell_num - 1)*2);
-      byte i = cell_num -1;
-      Serial.print("Connecting Cell "); Serial.print(i + 1); Serial.println(" to A output.");
-      //drive_relay(i * 2);
-      byte offset = 16 * (i/4); // 0 for cells 1-4 (i = 0->3), 16 for cells 5-8, etc.
-      byte code = offset + (i%4)*2;
-      Serial.print("Sending code: "); Serial.print(code); Serial.println(" to drive_relay");
-      drive_relay(code);  // connect cell 1 to A we send 0, connect cell 6 to A we send 18
-    }
-  }
-  else {
-    //drive_relay((cell_num - 1) * 2);
-      byte i = cell_num -1;
-      Serial.print("Connecting Cell "); Serial.print(i + 1); Serial.println(" to A output.");
-      //drive_relay(i * 2);
-      byte offset = 16 * (i/4); // 0 for cells 1-4 (i = 0->3), 16 for cells 5-8, etc.
-      byte code = offset + (i%4)*2;
-      Serial.print("Sending code: "); Serial.print(code); Serial.println(" to drive_relay");
-      drive_relay(code);  // connect cell 1 to A we send 0, connect cell 6 to A we send 18
-  }
-
-  
-  if(check_connected('A') == cell_num){
-    Serial.println("Success!");
-    return 0;
-  }
-  else {
-    Serial.println("Failed to connect cell...");
-    return -1;
-  }
-  return 0; // remove and clean up commented check above
-}
-
-byte connect_B(byte cell_num) {
-  if(already_connected('B')){
-    Serial.println("Uh-oh, a cell is already connected to output B");
-    disconnect_B(check_connected('B'));
-    
-    if(already_connected('B')){
-      Serial.println("Failed to clear B - exiting.");
-      return -1;
-    }
-    else {
-      //clearing the state worked, let's go ahead and connect the cell
-      //drive_relay(8 + (cell_num - 1)*2);
-      byte i = cell_num - 1;
-      Serial.print("Connecting Cell "); Serial.print(i+1); Serial.println(" to B output.");
-      //drive_relay(8 + (i * 2));
-      byte offset = 8 * (2*(i/4) + 1); // 8 if on board 1, 24 if on board 2, etc.
-      byte code = offset + (i%4)*2;
-      Serial.print("Sending code: "); Serial.print(code); Serial.println(" to drive_relay");
-      drive_relay(code); // connect cell 1 to B we send 8, connect cell 6(i=5) to B we send 24 + 2 = 26 
-    }
-  }
-  else {
-    //drive_relay(8 + (cell_num - 1) * 2);
-      byte i = cell_num - 1;
-      Serial.print("Connecting Cell "); Serial.print(i+1); Serial.println(" to B output.");
-      //drive_relay(8 + (i * 2));
-      byte offset = 8 * (2*(i/4) + 1); // 8 if on board 1, 24 if on board 2, etc.
-      byte code = offset + (i%4)*2;
-      Serial.print("Sending code: "); Serial.print(code); Serial.println(" to drive_relay");
-      drive_relay(code); // connect cell 1 to B we send 8, connect cell 6(i=5) to B we send 24 + 2 = 26 
-  }
-  if(check_connected('B') == cell_num){
-    Serial.println("Success!");
-    return 0;
-  }
-  else {
-    Serial.println("Failed to connect cell...");
-    return -1;
-  }
-  return 0;
-}
 
 byte connect_cell(byte cell_num, char output){
   if(already_connected(output)){
@@ -555,36 +378,18 @@ void loop() {
   if (rx_buf[0] == 'C'){
     Serial.println("Got a connect command");
     Serial.println(rx_buf);
+    char output = rx_buf[3];
     // we're asked to connect a cell
-    if (rx_buf[3] == 'A'){
-      // to output A
-      // get cell num
-      char cell_num_str[3];
-      memset(cell_num_str, '\0', sizeof(cell_num_str));
-      strncpy(cell_num_str, rx_buf+1, 2);
-      byte cell_num = atoi(cell_num_str);
-      if((cell_num < 1) || (cell_num > (4 * num_brd))){
-        Serial.println("Error bad cell number in connect request.");
-      }
-      else{
-        Serial.print("Attempting to connect cell "); Serial.print(cell_num); Serial.println(" to output A.");
-        connect_cell(cell_num, rx_buf[3]);
-      }
+    char cell_num_str[3];
+    memset(cell_num_str, '\0', sizeof(cell_num_str));
+    strncpy(cell_num_str, rx_buf+1, 2);
+    byte cell_num = atoi(cell_num_str);
+    if((cell_num < 1) || (cell_num > (4 * num_brd))){
+      Serial.println("Error bad cell number in connect request.");
     }
-    if (rx_buf[3] == 'B'){
-      // to output B
-      // get cell num
-      char cell_num_str[3];
-      memset(cell_num_str, '\0', sizeof(cell_num_str));
-      strncpy(cell_num_str, rx_buf+1, 2);
-      byte cell_num = atoi(cell_num_str);
-      if((cell_num < 1) || (cell_num > (4 * num_brd))){
-        Serial.println("Error bad cell number in connect request.");
-      }
-      else{
-        Serial.print("Attempting to connect cell "); Serial.print(cell_num); Serial.println(" to output B.");
-        connect_cell(cell_num, rx_buf[3]);
-      }
+    else{
+      Serial.print("Attempting to connect cell "); Serial.print(cell_num); Serial.print(" to output "); Serial.println(output);
+      connect_cell(cell_num, rx_buf[3]);
     }
   }  
   if (rx_buf[0] == 'D'){
@@ -601,9 +406,8 @@ void loop() {
     }
     // we're asked to disconnect a cell
     else{
-    if (rx_buf[3] == 'A'){
-      // output A
-      // get cell num
+      char output = rx_buf[3];
+      // we're asked to connect a cell
       char cell_num_str[3];
       memset(cell_num_str, '\0', sizeof(cell_num_str));
       strncpy(cell_num_str, rx_buf+1, 2);
@@ -612,26 +416,10 @@ void loop() {
         Serial.println("Error bad cell number in disconnect request.");
       }
       else{
-        Serial.print("Attempting to disconnect cell "); Serial.print(cell_num); Serial.println(" from output A.");
-        disconnect_A(cell_num);
+        Serial.print("Attempting to disconnect cell "); Serial.print(cell_num); Serial.print(" to output "); Serial.println(output);
+        disconnect_cell(cell_num, rx_buf[3]);
       }
-    }
-        if (rx_buf[3] == 'B'){
-      // output B
-      // get cell num
-      char cell_num_str[3];
-      memset(cell_num_str, '\0', sizeof(cell_num_str));
-      strncpy(cell_num_str, rx_buf+1, 2);
-      byte cell_num = atoi(cell_num_str);
-      if((cell_num < 1) || (cell_num > (4 * num_brd))){
-        Serial.println("Error bad cell number in disconnect request.");
-      }
-      else{
-        Serial.print("Attempting to disconnect cell "); Serial.print(cell_num); Serial.println(" from output B.");
-        disconnect_B(cell_num);
-      }
-    }
-  }
+    }  
   }  
 
   if (rx_buf[0] == 'R'){
